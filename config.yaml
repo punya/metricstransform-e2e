@@ -1,0 +1,58 @@
+receivers:
+  prometheus:
+    config:
+      scrape_configs:
+      - job_name: 'testjob'
+        scrape_interval: 5s
+        static_configs:
+        - targets: [%s]
+
+processors:
+  batch:
+    timeout: 10s
+
+  resource:
+    attributes:
+    - key: service.instance.id
+      action: delete
+    - key: net.host.name
+      action: delete
+
+  filter:
+    metrics:
+      include:
+        match_type: strict
+        metric_names:
+        - themetric
+
+  metricstransform:
+    transforms:
+    - include: themetric
+      action: insert
+      new_name: combinedmetric
+      operations:
+      - action: aggregate_labels
+        label_set: []
+        aggregation_type: sum
+
+exporters:
+  prometheus:
+    endpoint: ":4000"
+  
+  logging:
+    verbosity: detailed
+
+extensions:
+  health_check:
+
+service:
+  extensions: [health_check]
+  pipelines:
+    metrics/1:
+      receivers: [prometheus]
+      processors: [filter, resource, batch, metricstransform]
+      exporters: [prometheus]
+    metrics/2:
+      receivers: [prometheus]
+      processors: [filter, resource, batch]
+      exporters: [logging]
