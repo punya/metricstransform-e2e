@@ -1,11 +1,18 @@
 receivers:
-  prometheus:
+  prometheus/rec1:
     config:
       scrape_configs:
       - job_name: 'testjob'
         scrape_interval: 5s
         static_configs:
         - targets: [%s]
+  prometheus/rec2:
+    config:
+      scrape_configs:
+      - job_name: 'recyclejob'
+        scrape_interval: 5s
+        static_configs:
+        - targets: [localhost:4000]
 
 processors:
   batch:
@@ -24,6 +31,7 @@ processors:
         match_type: strict
         metric_names:
         - themetric
+        - combinedmetric
 
   metricstransform:
     transforms:
@@ -36,9 +44,12 @@ processors:
         aggregation_type: sum
 
 exporters:
-  prometheus:
+  prometheus/exp1:
     endpoint: ":4000"
-  
+
+  prometheus/exp2:
+    endpoint: ":4001"
+
   logging:
     verbosity: detailed
 
@@ -49,10 +60,10 @@ service:
   extensions: [health_check]
   pipelines:
     metrics/1:
-      receivers: [prometheus]
+      receivers: [prometheus/rec1]
       processors: [filter, resource, batch, metricstransform]
-      exporters: [prometheus]
+      exporters: [prometheus/exp1]
     metrics/2:
-      receivers: [prometheus]
-      processors: [filter, resource, batch]
-      exporters: [logging]
+      receivers: [prometheus/rec2]
+      processors: [filter, metricstransform]
+      exporters: [prometheus/exp2]

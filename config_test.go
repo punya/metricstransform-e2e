@@ -46,8 +46,9 @@ func makeOtelCollector(t *testing.T, env *e2e.DockerEnvironment, targets ...stri
 
 	return env.Runnable("otelcol").
 		WithPorts(map[string]int{
-			"health":  13133,
-			"metrics": 4000,
+			"health":   13133,
+			"metrics1": 4000,
+			"metrics2": 4001,
 		}).
 		Init(e2e.StartOptions{
 			Command: e2e.NewCommand("--config", configFile),
@@ -81,7 +82,7 @@ func TestAll(t *testing.T) {
 
 	for {
 		time.Sleep(10 * time.Second)
-		res, err := http.Get("http://" + otelcol.Endpoint("metrics") + "/metrics")
+		res, err := http.Get("http://" + otelcol.Endpoint("metrics2") + "/metrics")
 		if err != nil {
 			t.Log(err)
 			continue
